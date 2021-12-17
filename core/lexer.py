@@ -19,7 +19,7 @@ def lex(source: str) -> Tuple[List[str], List[List[TokenTypes]]]:
     lexed: List[List[TokenTypes]] = []
     lines = source.splitlines()
 
-    for line in lines:
+    for line_i, line in enumerate(lines):
         tokens: List[TokenTypes] = []
         comment_flag = False
         for index, token in enumerate(line):
@@ -47,7 +47,7 @@ def lex(source: str) -> Tuple[List[str], List[List[TokenTypes]]]:
                     comment_flag = True
                     break
                 case _:
-                    ErrorPrinter.lexing_error(Error.UNKNOWN_TOKEN, token, line, f":{index}")
+                    ErrorPrinter.lexing_error(Error.UNKNOWN_TOKEN, token, line, f"{line_i+1}:{index}")
 
         if not comment_flag:
             lexed.append(tokens)

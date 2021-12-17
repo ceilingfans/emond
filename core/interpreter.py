@@ -19,12 +19,12 @@ def interpret(source: List[str], lines: List[List[TokenTypes]], cell_array_size:
 
                 case TokenTypes.CELL_SHIFT_RIGHT:
                     if CELL_POINTER >= cell_array_size:
-                        ErrorPrinter.runtime_error(Error.OVERFLOW_CELL, source[line_i], f"{line_i}:{token_i}")
+                        ErrorPrinter.runtime_error(Error.OVERFLOW_CELL, source[line_i], f"{line_i+1}:{token_i}")
                     CELL_POINTER += 1
 
                 case TokenTypes.CELL_SHIFT_LEFT:
                     if CELL_POINTER <= 0:
-                        ErrorPrinter.runtime_error(Error.NEGATIVE_CELL, source[line_i], f"{line_i}:{token_i}")
+                        ErrorPrinter.runtime_error(Error.NEGATIVE_CELL, source[line_i], f"{line_i+1}:{token_i}")
                     CELL_POINTER -= 1
 
                 case TokenTypes.ALPHABET_RESET:
@@ -38,7 +38,7 @@ def interpret(source: List[str], lines: List[List[TokenTypes]], cell_array_size:
 
                 case TokenTypes.PRINT:
                     if CELL_ARRAY[CELL_POINTER] < 0:
-                        ErrorPrinter.runtime_error(Error.NEGATIVE_VALUE_PRINT, source[line_i], f"{line_i}:{token_i }")
+                        ErrorPrinter.runtime_error(Error.NEGATIVE_VALUE_PRINT, source[line_i], f"{line_i+1}:{token_i }")
                     stdout.write(chr(CELL_ARRAY[CELL_POINTER]))
 
                 case _:
