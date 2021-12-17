@@ -46,6 +46,8 @@ def lex(source: str) -> Tuple[List[str], List[List[TokenTypes]]]:
                     lexed.append(tokens)
                     comment_flag = True
                     break
+                case _:
+                    ErrorPrinter.lexing_error(Error.UNKNOWN_TOKEN, token, line, f":{index}")
 
         if not comment_flag:
             lexed.append(tokens)
