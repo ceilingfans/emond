@@ -90,6 +90,17 @@ $%
 ; is cell 3
 ```
 
+# Getting Started
+- Running Code
+```shell
+$ python3 emond.py examples/helloworld.em
+```
+This will interpret the hello world example
+```shell
+$ python3 emond.py --help
+```
+This will print the help message where you can find more options
+
 # Contribution
 I am currently not accepting any contributions to this project
 but feel free to fork it
