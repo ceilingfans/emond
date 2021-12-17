@@ -42,7 +42,7 @@ def lex(source: str) -> Tuple[List[str], List[List[TokenTypes]]]:
                     tokens.append(TokenTypes.ALPHABET_RESET)
                 case " " | "\t":
                     continue
-                case "|":
+                case ";":
                     lexed.append(tokens)
                     comment_flag = True
                     break
