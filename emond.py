@@ -11,6 +11,18 @@ from core.test import run_test
 VERSION = "emond language interpreter version 0.1"
 
 
+class Colorizer:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def main() -> None:
     argparser = argparse.ArgumentParser(
         description=VERSION,
@@ -40,45 +52,47 @@ def main() -> None:
         files = glob.glob("test/*.test.em")
         passed = []
         failed = []
+        print(f"Found {len(files)} test files in `test`")
         for file in files:
-            err = run_test(file)
-            if err:
-                failed.append((file, err))
+            print(f"Running {file}: ", end="")
+            error = run_test(file)
+            if error:
+                print(f"{Colorizer.FAIL}FAILED{Colorizer.ENDC}")
+                failed.append((file, error))
             else:
+                print(f"{Colorizer.OKGREEN}✔{Colorizer.ENDC}")
                 passed.append(file)
-
-        print(
-            f"Test finished. Summary {{ passed: {len(passed)}, failed: {len(failed)} }}"
-        )
         print()
+        print(f"Summary:\n\r    Passed: {Colorizer.OKGREEN}{len(passed)}{Colorizer.ENDC}, Failed: {Colorizer.FAIL}{len(failed)}{Colorizer.ENDC}")
+        print()
+
+        print(f"{Colorizer.OKGREEN}PASSED:{Colorizer.ENDC}")
         if not passed:
-            print("0 test cases passed ;( oh no...")
+            print("    Nothing passed, oh no")
         else:
-            print("Passing")
             for i, test in enumerate(passed):
-                print(f"{i+1}: {test}")
-
+                print(f"    {i + 1}: {test} {Colorizer.OKGREEN}✔{Colorizer.ENDC}")
         print()
 
+        print(f"{Colorizer.FAIL}FAILED:{Colorizer.ENDC}")
         if not failed:
-            print("0 test cases failed :D yay!")
+            print(f"    Nothing failed, good job")
         else:
-            print("Failing")
             for i, test in enumerate(failed):
-                print(f"{i+1}: {test[0]} -> {test[1]}")
-        exit(0)
+                print(f"    {i + 1}: {test[0]} -> {test[1]} {Colorizer.FAIL}✗{Colorizer.ENDC}")
+        exit()
 
     if not args.file:
-        sys.stderr.write("emond: error: no input file\n")
+        sys.stderr.write("emond: error: no input file\n\r")
         exit(1)
 
     if not path.exists(args.file):
-        sys.stderr.write(f"emond: error: invalid file path: {args.file}\n")
+        sys.stderr.write(f"emond: error: invalid file path: {args.file}\n\r")
         exit(1)
 
     if args.length < 1:
         sys.stderr.write(
-            f"emond: error: cell array length must be at least 1, received: {args.length}\n"
+            f"emond: error: cell array length must be at least 1, received: {args.length}\n\r"
         )
         exit(1)
 
