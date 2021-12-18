@@ -7,9 +7,10 @@ class Error(Enum):
     UNKNOWN_TOKEN = auto()
 
     # runtime related errors
-    NEGATIVE_CELL = auto()
+    NEGATIVE_CELL_POINTER = auto()
     OVERFLOW_CELL = auto()
     NEGATIVE_VALUE_PRINT = auto()
+    NEGATIVE_CELL_VALUE = auto()
 
 
 class ErrorPrinter:
@@ -38,7 +39,7 @@ class ErrorPrinter:
     @staticmethod
     def runtime_error(error: Error, line: str, index: str):
         match error:
-            case Error.NEGATIVE_CELL:
+            case Error.NEGATIVE_CELL_POINTER:
                 stderr.write(
                     f"ValueError[{error.name}]: Cell pointers may not be negative\n\r"
                 )
@@ -47,6 +48,10 @@ class ErrorPrinter:
             case Error.NEGATIVE_VALUE_PRINT:
                 stderr.write(
                     f"ValueError[{error.name}]: The print operator may not be used on a negative value\n\r"
+                )
+            case Error.NEGATIVE_CELL_VALUE:
+                stderr.write(
+                    f"ValueError[{error.name}]: Cell values may not be negative in strict mode\n\r"
                 )
             case _:
                 stderr.write(
@@ -69,14 +74,9 @@ class ErrorPrinter:
         start = index - 4
         end = index + 6
 
-        start_extend = True
-        end_extend = True
-
         if start < 0:
             start = 0
-            start_extend = False
         if end >= len(line):
             end = len(line) - 1
-            end_extend = False
 
         return f"{line[start:end]}\n\r" f"       {' '*(index-start)}^"

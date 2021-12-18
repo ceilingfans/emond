@@ -9,6 +9,7 @@ def interpret(
     source: List[str],
     lines: List[List[TokenTypes]],
     cell_array_size: int,
+    strict: bool = False,
     exit_on_fail: bool = True,
     silent: bool = False,
 ) -> None | Error:
@@ -21,6 +22,16 @@ def interpret(
                     CELL_ARRAY[CELL_POINTER] += 1
 
                 case TokenTypes.MINUS:
+                    if strict:
+                        if CELL_ARRAY[CELL_POINTER] <= 0:
+                            if exit_on_fail:
+                                ErrorPrinter.runtime_error(
+                                    Error.NEGATIVE_CELL_POINTER,
+                                    source[line_i],
+                                    f"{line_i + 1}:{token_i}",
+                                )
+                            else:
+                                return Error.NEGATIVE_CELL_POINTER
                     CELL_ARRAY[CELL_POINTER] -= 1
 
                 case TokenTypes.CELL_SHIFT_RIGHT:
@@ -39,12 +50,12 @@ def interpret(
                     if CELL_POINTER <= 0:
                         if exit_on_fail:
                             ErrorPrinter.runtime_error(
-                                Error.NEGATIVE_CELL,
+                                Error.NEGATIVE_CELL_POINTER,
                                 source[line_i],
                                 f"{line_i + 1}:{token_i}",
                             )
                         else:
-                            return Error.NEGATIVE_CELL
+                            return Error.NEGATIVE_CELL_POINTER
                     CELL_POINTER -= 1
 
                 case TokenTypes.ALPHABET_RESET:
