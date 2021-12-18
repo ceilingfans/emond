@@ -102,6 +102,7 @@ $ python3 emond.py --help
 This will print the help message where you can find more options
 
 # Testing
+NOTE: This only does lexing and runtime checks for error, you are not able to add expected values yet
 - Create a `test` directory
 - Put your test files into the directory
 - Suffix these files with `.test.em`
