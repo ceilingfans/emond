@@ -10,15 +10,26 @@ from core.test import run_test
 
 VERSION = "emond language interpreter version 0.1"
 
+
 def main() -> None:
     argparser = argparse.ArgumentParser(
         description=VERSION,
         epilog="https://github.com/ceilingfans/emond",
     )
     argparser.add_argument("file", help="File to read code from", nargs="?")
-    argparser.add_argument('-v', '--version', help="prints version and exit", action="store_true")
-    argparser.add_argument('-t', '--test', help="run internal tests", action="store_true")
-    argparser.add_argument('-l', '--length', help="cell array length (default: 1000)", type=int, default=1000)
+    argparser.add_argument(
+        "-v", "--version", help="prints version and exit", action="store_true"
+    )
+    argparser.add_argument(
+        "-t", "--test", help="run internal tests", action="store_true"
+    )
+    argparser.add_argument(
+        "-l",
+        "--length",
+        help="cell array length (default: 1000)",
+        type=int,
+        default=1000,
+    )
     args = argparser.parse_args()
 
     if args.version:
@@ -36,7 +47,9 @@ def main() -> None:
             else:
                 passed.append(file)
 
-        print(f"Test finished. Summary {{ passed: {len(passed)}, failed: {len(failed)} }}")
+        print(
+            f"Test finished. Summary {{ passed: {len(passed)}, failed: {len(failed)} }}"
+        )
         print()
         if not passed:
             print("0 test cases passed ;( oh no...")
@@ -64,11 +77,14 @@ def main() -> None:
         exit(1)
 
     if args.length < 1:
-        sys.stderr.write(f"emond: error: cell array length must be at least 1, received: {args.length}\n")
+        sys.stderr.write(
+            f"emond: error: cell array length must be at least 1, received: {args.length}\n"
+        )
         exit(1)
 
     src = open(args.file).read().strip()
     interpret(*lex(src), args.length)
+
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,9 @@ class TokenTypes(Enum):
     ALPHABET_RESET = auto()
 
 
-def lex(source: str, exit_on_fail: bool = True) -> Tuple[List[str], List[List[TokenTypes]]] | Error:
+def lex(
+    source: str, exit_on_fail: bool = True
+) -> Tuple[List[str], List[List[TokenTypes]]] | Error:
     lexed: List[List[TokenTypes]] = []
     lines = source.splitlines()
 
@@ -48,7 +50,9 @@ def lex(source: str, exit_on_fail: bool = True) -> Tuple[List[str], List[List[To
                     break
                 case _:
                     if exit_on_fail:
-                        ErrorPrinter.lexing_error(Error.UNKNOWN_TOKEN, token, line, f"{line_i+1}:{index}")
+                        ErrorPrinter.lexing_error(
+                            Error.UNKNOWN_TOKEN, token, line, f"{line_i+1}:{index}"
+                        )
                     else:
                         return Error.UNKNOWN_TOKEN
 
