@@ -101,6 +101,16 @@ $ python3 emond.py --help
 ```
 This will print the help message where you can find more options
 
+# Testing
+- Create a `test` directory
+- Put your test files into the directory
+- Suffix these files with `.test.em`
+
+```shell
+$ python3 emond.py -t 
+```
+This will then run your tests
+
 # Contribution
 I am currently not accepting any contributions to this project
 but feel free to fork it
