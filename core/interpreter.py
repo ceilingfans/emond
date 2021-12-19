@@ -1,88 +1,131 @@
-from typing import List
 from sys import stdout, stderr
+from core.error import print_error, Errors
+from core.parser import TokenType
 
-from core.error import ErrorPrinter, Error
-from core.lexer import TokenTypes
 
+class Interpreter:
+    def __init__(
+        self,
+        tree,
+        cell_array_size: int,
+        filepath: str = None,
+        silent: bool = False,
+        print_to_string: bool = False,
+        exit_on_fail: bool = True,
+        input_text: str = "",
+    ) -> None:
+        if print_to_string:
+            stderr.write("WARNING: print_to_string has not been implemented\n\r")
 
-def interpret(
-    source: List[str],
-    lines: List[List[TokenTypes]],
-    cell_array_size: int,
-    strict: bool = False,
-    exit_on_fail: bool = True,
-    silent: bool = False,
-) -> None | Error:
-    CELL_ARRAY = [0] * cell_array_size
-    CELL_POINTER = 0
-    for line_i, line in enumerate(lines):
-        for token_i, token in enumerate(line):
-            match token:
-                case TokenTypes.ADD:
-                    CELL_ARRAY[CELL_POINTER] += 1
+        self.tree = tree
+        self.filepath = filepath
+        self.silent = silent
+        # self.print_to_string = print_to_string
+        self.exit_on_fail = exit_on_fail
+        self.input_text = input_text
 
-                case TokenTypes.MINUS:
-                    if strict:
-                        if CELL_ARRAY[CELL_POINTER] <= 0:
-                            if exit_on_fail:
-                                ErrorPrinter.runtime_error(
-                                    Error.NEGATIVE_CELL_POINTER,
-                                    source[line_i],
-                                    f"{line_i + 1}:{token_i}",
-                                )
-                            else:
-                                return Error.NEGATIVE_CELL_POINTER
-                    CELL_ARRAY[CELL_POINTER] -= 1
+        self.CELL_ARRAY = [0] * cell_array_size
+        self.CELL_POINTER = 0
+        self.index = 0
+        self.line = 0
+        self.input_text_index = 0
+        # self.output = ""
 
-                case TokenTypes.CELL_SHIFT_RIGHT:
-                    if CELL_POINTER >= cell_array_size:
-                        if exit_on_fail:
-                            ErrorPrinter.runtime_error(
-                                Error.OVERFLOW_CELL,
-                                source[line_i],
-                                f"{line_i + 1}:{token_i}",
-                            )
-                        else:
-                            return Error.OVERFLOW_CELL
-                    CELL_POINTER += 1
+    def interpret(self) -> None | Errors:
+        for node in self.tree:
+            res = self.__interpret_node(node)
+            if isinstance(res, Errors):
+                return res
 
-                case TokenTypes.CELL_SHIFT_LEFT:
-                    if CELL_POINTER <= 0:
-                        if exit_on_fail:
-                            ErrorPrinter.runtime_error(
-                                Error.NEGATIVE_CELL_POINTER,
-                                source[line_i],
-                                f"{line_i + 1}:{token_i}",
-                            )
-                        else:
-                            return Error.NEGATIVE_CELL_POINTER
-                    CELL_POINTER -= 1
+    def __interpret_node(self, node) -> None | Errors:
+        if type(node) == list:
+            tmp_ptr = self.CELL_POINTER
+            while self.CELL_ARRAY[tmp_ptr]:
+                # print(self.CELL_ARRAY[tmp_ptr])
+                # print(node)
+                for n in node:
+                    self.__interpret_node(n)
 
-                case TokenTypes.ALPHABET_RESET:
-                    CELL_ARRAY[CELL_POINTER] = ord("a")
+        match node:
+            case TokenType.ADD:
+                self.CELL_ARRAY[self.CELL_POINTER] += 1
+            case TokenType.MINUS:
+                self.CELL_ARRAY[self.CELL_POINTER] -= 1
+            case TokenType.CELL_SHIFT_LEFT:
+                if self.CELL_POINTER <= 0:
+                    if not self.silent:
+                        print_error(
+                            Errors.NEGATIVE_CELL_POINTER,
+                            filepath=self.filepath,
+                            index=(self.line, self.index),
+                        )
+                    if self.exit_on_fail:
+                        exit(1)
+                    else:
+                        return Errors.NEGATIVE_CELL_POINTER
+                self.CELL_POINTER -= 1
 
-                case TokenTypes.HARD_RESET:
-                    CELL_ARRAY[CELL_POINTER] = 0
+            case TokenType.CELL_SHIFT_RIGHT:
+                if self.CELL_POINTER >= len(self.CELL_ARRAY) - 1:
+                    if not self.silent:
+                        print_error(
+                            Errors.OVERFLOW_CELL_POINTER,
+                            filepath=self.filepath,
+                            index=(self.line, self.index),
+                        )
+                    if self.exit_on_fail:
+                        exit(1)
+                    else:
+                        return Errors.OVERFLOW_CELL_POINTER
+                self.CELL_POINTER += 1
 
-                case TokenTypes.PRINT_NEWLINE:
-                    if not silent:
-                        stdout.write("\n")
+            case TokenType.PRINT_CHAR:
+                if self.CELL_ARRAY[self.CELL_POINTER] < 0:
+                    if not self.silent:
+                        print_error(
+                            Errors.PRINT_NEGATIVE_CELL_VALUE,
+                            filepath=self.filepath,
+                            index=(self.line, self.index),
+                        )
+                    if self.exit_on_fail:
+                        exit(1)
+                    else:
+                        return Errors.PRINT_NEGATIVE_CELL_VALUE
+                if not self.silent:
+                    stdout.write(chr(self.CELL_ARRAY[self.CELL_POINTER]))
 
-                case TokenTypes.PRINT:
-                    if CELL_ARRAY[CELL_POINTER] < 0:
-                        if exit_on_fail:
-                            ErrorPrinter.runtime_error(
-                                Error.NEGATIVE_VALUE_PRINT,
-                                source[line_i],
-                                f"{line_i + 1}:{token_i}",
-                            )
-                        else:
-                            return Error.NEGATIVE_VALUE_PRINT
-                    if not silent:
-                        stdout.write(chr(CELL_ARRAY[CELL_POINTER]))
+            case TokenType.PRINT_NUM:
+                if not self.silent:
+                    stdout.write(str(self.CELL_ARRAY[self.CELL_POINTER]))
 
-                case _:
-                    stderr.write(
-                        "InternalError: Invalid token type provided by the lexer\n"
+            case TokenType.PRINT_NEWLINE:
+                if not self.silent:
+                    stdout.write("\n")
+
+            case TokenType.ALPHA_RESET:
+                self.CELL_ARRAY[self.CELL_POINTER] = ord("a")
+
+            case TokenType.UPPER_ALPHA_RESET:
+                self.CELL_ARRAY[self.CELL_POINTER] = ord("A")
+
+            case TokenType.HARD_RESET:
+                self.CELL_ARRAY[self.CELL_POINTER] = 0
+
+            case TokenType.VALUE_GET:
+                if not self.input_text:
+                    self.CELL_ARRAY[self.CELL_POINTER] = 0
+                else:
+                    self.CELL_ARRAY[self.CELL_POINTER] = ord(
+                        self.input_text[self.input_text_index]
                     )
-                    exit(-1)  # unrecoverable
+                    if self.input_text_index < len(self.input_text):
+                        self.input_text_index += 1
+
+            case TokenType.NEWLINE:
+                self.line += 1
+                self.index = -1
+
+            case TokenType.WHITESPACE:
+                pass  # handled below
+
+        self.index += 1
