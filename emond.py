@@ -1,124 +1,107 @@
 #!/usr/local/bin/python3.10
 
-import glob
-import sys
 import argparse
+from core.parser import parse
+from core.interpreter import Interpreter
+from core.error import print_error
 from os import path
-from core.lexer import lex
-from core.interpreter import interpret
-from core.test import run_test
 
-VERSION = "emond language interpreter version 0.1"
+VERSION = "emond lang interpreter v0.2"
 
 
-class Colorizer:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-
-def version():
+def print_version():
     print(VERSION)
-    exit(0)
 
 
-def test():
-    files = glob.glob("test/*.test.em")
-    passed = []
-    failed = []
-    print(f"Found {len(files)} test files in `test`")
-    for file in files:
-        print(f"Running {file}: ", end="")
-        error = run_test(file)
-        if error:
-            print(f"{Colorizer.FAIL}FAILED{Colorizer.ENDC}")
-            failed.append((file, error))
-        else:
-            print(f"{Colorizer.OKGREEN}✔{Colorizer.ENDC}")
-            passed.append(file)
-    print()
-    print(
-        f"Summary:\n\r    Passed: {Colorizer.OKGREEN}{len(passed)}{Colorizer.ENDC}, Failed: {Colorizer.FAIL}{len(failed)}{Colorizer.ENDC}"
-    )
-    print()
-
-    print(f"{Colorizer.OKGREEN}PASSED:{Colorizer.ENDC}")
-    if not passed:
-        print("    Nothing passed, oh no")
-    else:
-        for i, test in enumerate(passed):
-            print(f"    {i + 1}: {test} {Colorizer.OKGREEN}✔{Colorizer.ENDC}")
-    print()
-
-    print(f"{Colorizer.FAIL}FAILED:{Colorizer.ENDC}")
-    if not failed:
-        print(f"    Nothing failed, good job")
-    else:
-        for i, test in enumerate(failed):
-            print(
-                f"    {i + 1}: {test[0]} -> {test[1]} {Colorizer.FAIL}✗{Colorizer.ENDC}"
-            )
-    exit()
-
-
-def main() -> None:
-    argparser = argparse.ArgumentParser(
+def main():
+    parser = argparse.ArgumentParser(
         description=VERSION,
-        epilog="https://github.com/ceilingfans/emond",
+        epilog="https://github.com/ceilingfans/emond"
     )
-    argparser.add_argument("file", help="File to read code from", nargs="?")
-    argparser.add_argument(
-        "-v", "--version", help="prints version and exit", action="store_true"
+    parser.add_argument(
+        "file",
+        help="file to get source code",
+        nargs="?"
     )
-    argparser.add_argument(
-        "-t", "--test", help="run internal tests", action="store_true"
+    parser.add_argument(
+        "-v",
+        "--version",
+        help="prints version information and exits (defualt: false)",
+        action="store_true"
     )
-    argparser.add_argument(
+    parser.add_argument(
+        "-e",
+        "--exit_on_fail",
+        help="dont exit when an error is occured (default: true)",
+        action="store_false"
+    )
+    parser.add_argument(
         "-s",
         "--silent",
-        help="do not output anything to stdout (default: false) (ignored when testing)",
-        action="store_true",
+        help="silence output (default: false)",
+        action="store_true"
     )
-    argparser.add_argument(
-        "--no_fail_on_exit",
-        help="dont fail on exit (default: true) (ignored when testing)",
-        action="store_false",
+    parser.add_argument(
+        "-p",
+        "--print_to_string",
+        help="send output to string instead of stdout (default: false)",
+        action="store_true"
     )
-    argparser.add_argument(
+    parser.add_argument(
+        "-a",
+        "--args",
+        help="prints out the arguments provided and exits",
+        action="store_true"
+    )
+    parser.add_argument(
         "-l",
         "--length",
-        help="cell array length (default: 1000)",
-        type=int,
+        help="set length of cell array (default: 1000)",
         default=1000,
+        type=int
     )
-    args = argparser.parse_args()
+    parser.add_argument(
+        "-i",
+        "--input",
+        help="set input variable (default: \"\")",
+        default="",
+        type=str
+    )
+    args = parser.parse_args()
 
     if args.version:
-        version()
-    if args.test:
-        test()
+        print_version()
+        exit(0)
+
+    if args.args:
+        print(args)
+        exit(0)
+
     if not args.file:
-        sys.stderr.write("emond: error: no input file\n\r")
+        print_error("emond: no input files\n")
         exit(1)
+
     if not path.exists(args.file):
-        sys.stderr.write(f"emond: error: invalid file path: {args.file}\n\r")
+        print_error(f"emond: invalid filepath: {args.file}")
         exit(1)
+
     if args.length < 1:
-        sys.stderr.write(
-            f"emond: error: cell array length must be at least 1, received: {args.length}\n\r"
-        )
+        print_error(f"emond: cell array length must be at least 1, received: {args.length}")
         exit(1)
 
     src = open(args.file).read().strip()
-    interpret(
-        *lex(src, args.no_fail_on_exit), args.length, args.no_fail_on_exit, args.silent
+    tree = parse(src, args.file, args.exit_on_fail)
+    interpreter = Interpreter(
+        tree=tree,
+        cell_array_size=args.length,
+        filepath=args.file,
+        silent=args.silent,
+        print_to_string=args.print_to_string,
+        exit_on_fail=args.exit_on_fail,
+        input_text=args.input
     )
+
+    interpreter.interpret()
 
 
 if __name__ == "__main__":

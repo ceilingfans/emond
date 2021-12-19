@@ -1,82 +1,81 @@
 from enum import Enum, auto
+from typing import Tuple, Optional, List
 from sys import stderr
 
 
-class Error(Enum):
-    # lexing related errors
+class Errors(Enum):
+    #  lexing errors
     UNKNOWN_TOKEN = auto()
+    UNMATCHED_BRACKET = auto()
 
-    # runtime related errors
+    #  runtime errors
+    OVERFLOW_CELL_POINTER = auto()
     NEGATIVE_CELL_POINTER = auto()
-    OVERFLOW_CELL = auto()
-    NEGATIVE_VALUE_PRINT = auto()
-    NEGATIVE_CELL_VALUE = auto()
+    PRINT_NEGATIVE_CELL_VALUE = auto()
 
 
-class ErrorPrinter:
-    @staticmethod
-    def lexing_error(
-        error: Error, current_token_literal: str, line: str, index: str
-    ) -> None:
-        match error:
-            case Error.UNKNOWN_TOKEN:
+def __error_snippet(line: str, index: int) -> List[str]:
+    start = index - 4
+    end = index + 6
+
+    if start < 0:
+        start = 0
+    if end >= len(line):
+        end = len(line)
+
+    source = f"at {line[start:end]}"
+    arrow = f"   {' ' * (index - start)}^"
+
+    return [source, arrow]
+
+
+def print_error(
+    error: Errors | str,
+    line: str = None,
+    filepath: str = None,
+    index: Tuple[Optional[int], int] = None,
+) -> None:
+    if index is not None and line:
+        if index[1] >= len(line):
+            raise IndexError(
+                "index provided is greater than or equal to length of line"
+            )
+
+    match error:
+        case Errors.UNKNOWN_TOKEN:
+            stderr.write(f"SyntaxError[{error.name}]: Unknown token\n\r")
+        case Errors.UNMATCHED_BRACKET:
+            stderr.write(f"SyntaxError[{error.name}]: Unmatched Bracket\n\r")
+        case Errors.OVERFLOW_CELL_POINTER:
+            stderr.write(
+                f"ValueError[{error.name}]: Cell pointers cannot be larger than the cell array length\n\r"
+            )
+        case Errors.NEGATIVE_CELL_POINTER:
+            stderr.write(
+                f"ValueError[{error.name}]: Cell pointers cannot be negative\n\r"
+            )
+        case Errors.PRINT_NEGATIVE_CELL_VALUE:
+            stderr.write(
+                f"ValueError[{error.name}]: The print character operator cannot be used on negative cell values\n\r"
+            )
+        case _:
+            if type(error) == str:
+                stderr.write(error)
+            else:
                 stderr.write(
-                    f"SyntaxError[{error.name}]: Unknown Token -> {current_token_literal}\n\r"
-                )
-            case _:
-                stderr.write(
-                    f"InternalError: An unexpected error has occured -> Invalid lexing error type\n\r"
-                )
-                exit(-1)
+                    "InternalError: An invalid error was provided\n\r"
+                )  # unexpected behaviour, therefore
+                exit(-1)  # exit with -1
 
-        error_message = (
-            f"    at <source_file>:{index}\n\r"
-            f"    at {ErrorPrinter.__get_snippet(line, int(index.split(':')[1]))}\n\r"
-        )
-        stderr.write(error_message)
-        exit(1)
+    stderr.write(f"    at <{filepath or 'source'}>")
+    if index is None:
+        stderr.write("\n\r")
+        return
+    if index[0] is None:
+        stderr.write(f", position {index[1]+1}\n\r")
+    else:
+        stderr.write(f":{index[0]+1}:{index[1]+1}\n\r")
 
-    @staticmethod
-    def runtime_error(error: Error, line: str, index: str):
-        match error:
-            case Error.NEGATIVE_CELL_POINTER:
-                stderr.write(
-                    f"ValueError[{error.name}]: Cell pointers may not be negative\n\r"
-                )
-            case Error.OVERFLOW_CELL:
-                stderr.write(f"ValueError[{error.name}]: Cell pointer overloaded\n\r")
-            case Error.NEGATIVE_VALUE_PRINT:
-                stderr.write(
-                    f"ValueError[{error.name}]: The print operator may not be used on a negative value\n\r"
-                )
-            case Error.NEGATIVE_CELL_VALUE:
-                stderr.write(
-                    f"ValueError[{error.name}]: Cell values may not be negative in strict mode\n\r"
-                )
-            case _:
-                stderr.write(
-                    f"InternalError: An unexpected error has occured -> Invalid runtime error type\n\r"
-                )
-                exit(-1)
-
-        error_message = (
-            f"\tat <source_file>:{index}\n\r"
-            f"\t   at {ErrorPrinter.__get_snippet(line, int(index.split(':')[1]))}\n\r"
-        )
-        stderr.write(error_message)
-        exit(1)
-
-    @staticmethod
-    def __get_snippet(line: str, index: int):
-        if len(line) == 1:
-            return f"{line}\n\r" f"       ^"
-
-        start = index - 4
-        end = index + 6
-
-        if start < 0:
-            start = 0
-        if end >= len(line):
-            end = len(line) - 1
-
-        return f"{line[start:end]}\n\r" f"       {' '*(index-start)}^"
+    if line:
+        for s in __error_snippet(line, index[1]):
+            stderr.write(f"    {s}\n\r")
